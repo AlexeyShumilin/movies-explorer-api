@@ -1,7 +1,8 @@
+
 const router = require('express').Router();
 
-//контроллеры юзер
-const {checkBodyUser} = require('../middlewares/validator');
+const { getUsers, getCurrentUser, updateCurrentUser } = require('../controllers/users');
+const { checkBodyUser } = require('../middlewares/validator');
 
 router.get('/', getUsers);
 router.get('/me', getCurrentUser);
