@@ -30,4 +30,6 @@ app.use(errors());
 app.use(errorLogger);
 app.use(centralErrorsHandler);
 
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`Start server on port ${PORT}`);
+});
