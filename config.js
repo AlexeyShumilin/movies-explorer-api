@@ -1,7 +1,6 @@
 require('dotenv').config();
 
-const { JWT_SECRET = 'JWT_SECRET' } = process.env;
-
 module.exports = {
-  JWT_SECRET,
+  PORT: 3000,
+  JWT_SECRET: (process.env.NODE_ENV !== 'production') ? 'JWT_SECRET' : process.env.JWT_SECRET,
 };
