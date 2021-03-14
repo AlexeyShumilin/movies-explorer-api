@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { errors } = require('celebrate');
+
 const helmet = require('helmet');
 const { corsConfig } = require('./middlewares/cors');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
@@ -10,17 +11,14 @@ const router = require('./routes/index');
 const centralErrorsHandler = require('./middlewares/centralErrorsHandler');
 const limiter = require('./middlewares/limiter');
 
-const { PORT = 3000, DB_ADDRESS = 'mongodb://localhost:27017/movies-explorer' } = process.env;
+const { MONGO_URL, mongoSetting } = require('./config');
+
+const { PORT = 3000 } = process.env;
 const app = express();
 app.use('*', cors(corsConfig));
 app.use(helmet());
 
-mongoose.connect(DB_ADDRESS, {
-  useNewUrlParser: true,
-  useCreateIndex: true,
-  useFindAndModify: false,
-  useUnifiedTopology: true,
-});
+mongoose.connect(MONGO_URL, mongoSettings);
 
 app.use(express.json());
 
