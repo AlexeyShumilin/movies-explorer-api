@@ -1,34 +1,36 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-
+const cors = require('cors');
 const { errors } = require('celebrate');
 const helmet = require('helmet');
-const cors = require('cors');
+const { corsConfig } = require('./middlewares/cors');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
+const router = require('./routes/index');
+const centralErrorsHandler = require('./middlewares/centralErrorsHandler');
+const limiter = require('./middlewares/limiter');
 
-const { requestLogger, errorLogger } = require('./middlewares/logger.js');
-const routes = require('./routes/index');
-const errorHandler = require('./middlewares/centralErrorsHandler.js');
-const limiter = require('./middlewares/limiter.js');
-
-const { MONGO_URL, mongoSetting } = require('./config');
-
-const { PORT = 3000 } = process.env;
-
+const { PORT = 3000, DB_ADDRESS = 'mongodb://localhost:27017/movies-explorer' } = process.env;
 const app = express();
-app.use(cors());
+app.use('*', cors(corsConfig));
 app.use(helmet());
 
-mongoose.connect(MONGO_URL, mongoSetting);
+mongoose.connect(DB_ADDRESS, {
+  useNewUrlParser: true,
+  useCreateIndex: true,
+  useFindAndModify: false,
+  useUnifiedTopology: true,
+});
+
+app.use(express.json());
 
 app.use(requestLogger);
 app.use(limiter);
 
-app.use(routes);
+app.use(router);
 
-app.use(errorLogger);
 app.use(errors());
-app.use(errorHandler);
+app.use(errorLogger);
+app.use(centralErrorsHandler);
 
-app.listen(PORT, () => {
-  console.log(`Start server on port ${PORT}`);
-});
+app.listen(PORT);

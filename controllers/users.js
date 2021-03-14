@@ -1,88 +1,98 @@
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
-const BadRequestError = require('../errors/badrequest');
-const UnauthorizedError = require('../errors/unauthorized');
+const bcrypt = require('bcryptjs');
+const userModel = require('../models/user');
 const NotFoundError = require('../errors/notfounderr');
-const ForbiddenError = require('../errors/forbidden');
 const ConflictError = require('../errors/conflicterr');
+const BadRequestError = require('../errors/badrequest.js');
+
 const { JWT_SECRET } = require('../config');
 
-const isAuthorized = (token) => {
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (err) {
-    return false;
-  }
+const getUsers = (req, res, next) => {
+  userModel.find({})
+    .then((data) => res.status(200).send(data))
+    .catch(next);
 };
 
-const getMe = (req, res, next) => {
-  const token = req.headers.authorization;
-
-  if (!isAuthorized(token)) {
-    throw new ForbiddenError('Access denied');
-  }
-
-  return User.findById(req.user._id)
-    .then((user) => {
-      if (!user) {
-        throw new NotFoundError('wrong id');
+const getCurrentUser = (req, res, next) => {
+  const userId = req.user._id;
+  userModel.findById(userId)
+    .orFail(() => {
+      throw new NotFoundError('wrong id');
+    })
+    .then((data) => res.status(200).send(data))
+    .catch((err) => {
+      if (err.kind === 'ObjectId' || err.kind === 'CastError') {
+        throw new BadRequestError('Data not valid');
+      } else {
+        next(err);
       }
-      return res.status(200).send({ data: user });
-    })
-    .catch(next);
+    });
 };
 
-const updateMe = (req, res, next) => {
-  const { name, mail } = req.body;
-  const owner = req.user._id;
-
-  return User.findOneAndUpdate(owner, { name, mail }, { new: true })
-    .then((user) => {
-      if (!user) {
-        throw new NotFoundError('wrong id');
+const updateCurrentUser = (req, res, next) => {
+  const userId = req.user._id;
+  const { email, name } = req.body;
+  if (!email || !name) {
+    throw new BadRequestError('Data not valid');
+  }
+  userModel.findByIdAndUpdate(userId, { email, name }, { new: true })
+    .orFail(() => {
+      throw new NotFoundError();
+    })
+    .then((data) => res.status(200).send(data))
+    .catch((err) => {
+      if (err.kind === 'ObjectId' || err.kind === 'CastError') {
+        next(new BadRequestError('Data not valid'));
+      } else {
+        next(err);
       }
-      res.send(user);
-    })
-    .catch(next);
-};
-
-const login = (req, res, next) => {
-  const { email, password } = req.body;
-
-  return User.findUserByCredentials(email, password)
-    .then((user) => {
-      const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-
-      return res.send({ token });
-    })
-    .catch(() => {
-      throw new UnauthorizedError('Incorrect email or password ');
-    })
-    .catch(next);
+    });
 };
 
 const createUser = (req, res, next) => {
   const {
-    name, password, email,
+    email, password, name,
   } = req.body;
 
+  if (!email || !password || !name) {
+    throw new BadRequestError('Data not valid');
+  }
+
   bcrypt.hash(password, 10)
-    .then((hash) => User.create({
-      name, password: hash, email,
-    }))
-    .then((user) => res.status(200).send({ mail: user.email }))
-    .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
-        throw new BadRequestError('Data not valid');
-      }
-      if (err.name === 'MongoError' || err.code === '11000') {
-        throw new ConflictError('email is already registered');
-      }
+    .then((hash) => {
+      userModel.create({ email, name, password: hash })
+        .then((data) => {
+          res.status(200).send({ email: data.email, name: data.name });
+        })
+        .catch((err) => {
+          if (err.name === 'MongoError' && err.code === 11000) {
+            throw new ConflictError('email is already registered');
+          }
+          if (err.kind === 'ObjectId' || err.kind === 'CastError') {
+            throw new BadRequestError('Data not valid');
+          } else {
+            next(err);
+          }
+        })
+        .catch(next);
+    });
+};
+
+const loginUser = (req, res, next) => {
+  const { email, password } = req.body;
+
+  return userModel.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign(
+        { _id: user._id },
+        JWT_SECRET,
+        { expiresIn: '7d' },
+      );
+      res.send({ token });
     })
     .catch(next);
 };
 
 module.exports = {
-  createUser, login, getMe, updateMe,
+  getUsers, getCurrentUser, updateCurrentUser, createUser, loginUser,
 };

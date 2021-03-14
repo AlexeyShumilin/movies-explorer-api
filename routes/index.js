@@ -1,15 +1,14 @@
 const router = require('express').Router();
 
-const { createUser, login } = require('../controllers/users');
+const { createUser, loginUser } = require('../controllers/users');
 const routerUsers = require('./users');
 const routerMovies = require('./movies');
-const NotFoundError = require('../errors/notfounderr');
-
 const { auth } = require('../middlewares/auth');
 const { checkSignup, checkSignIn } = require('../middlewares/validator');
+const NotFoundError = require('../errors/notfounderr');
 
 router.post('/signup', checkSignup, createUser);
-router.post('/signin', checkSignIn, login);
+router.post('/signin', checkSignIn, loginUser);
 
 router.use('/users', auth, routerUsers);
 router.use('/movies', auth, routerMovies);
