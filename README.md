@@ -16,7 +16,7 @@ JavaScript
 API   
 
 
-## Установка
+## Install
 
 
 
