@@ -4,13 +4,16 @@ http://api.shdiplom.students.nomoredomains.icu
 https://api.shdiplom.students.nomoredomains.icu
 
 
+## About  
+Backend of the site to search movies. Front-end code [here](https://github.com/AlexeyShumilin/movies-explorer-frontend)
 
-## Stack
-Node.js 
-Express.js  
-MongoDB 
-JavaScript  
-API 
+
+## Stack  
+Node.js   
+Express.js    
+MongoDB   
+JavaScript    
+API   
 
 
 ## Установка
